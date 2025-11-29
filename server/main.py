@@ -1,16 +1,14 @@
 import os
 import json
+import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from youtube_transcript_api import YouTubeTranscriptApi
 from openai import OpenAI
 from urllib.parse import urlparse, parse_qs
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# Konfigurimi i OpenAI (Inteligjencës)
-# Këtë çelës do e marrim nga Railway Environment Variables
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 def extract_video_id(url):
@@ -26,8 +24,47 @@ def extract_video_id(url):
     except: return None
     return None
 
+def get_transcript_from_rapidapi(video_id):
+    # Përdorim RapidAPI
+    api_key = os.environ.get("RAPIDAPI_KEY")
+    api_host = os.environ.get("RAPIDAPI_HOST", "youtube-transcripts.p.rapidapi.com")
+    
+    if not api_key:
+        raise Exception("Mungon RAPIDAPI_KEY në server.")
+
+    url = f"https://{api_host}/youtube/transcript"
+    
+    # Kjo API specifike punon me param 'url'
+    querystring = {"url": f"https://www.youtube.com/watch?v={video_id}"}
+
+    headers = {
+        "X-RapidAPI-Key": api_key,
+        "X-RapidAPI-Host": api_host
+    }
+
+    response = requests.get(url, headers=headers, params=querystring)
+    
+    if response.status_code != 200:
+        raise Exception(f"RapidAPI Error: {response.text}")
+        
+    data = response.json()
+    
+    # Logjika për të nxjerrë tekstin (varet nga struktura e JSON)
+    # Shumica kthejnë { content: [{text: "..."}] } ose direkt listë
+    full_text = ""
+    
+    if "content" in data:
+        full_text = " ".join([item['text'] for item in data['content']])
+    elif isinstance(data, list):
+         full_text = " ".join([item['text'] for item in data])
+    else:
+        # Fallback nëse struktura është ndryshe
+        full_text = str(data)
+        
+    return full_text
+
 @app.route('/', methods=['GET'])
-def home(): return "Serveri punon! Duhet API KEY per te vazhduar."
+def home(): return "Serveri punon (RapidAPI Version)!"
 
 @app.route('/api/get-transcript', methods=['POST'])
 def get_transcript():
@@ -39,44 +76,32 @@ def get_transcript():
     if not video_id: return jsonify({'error': 'Linku jo i sakte'}), 400
 
     try:
-        # HAPI 1: Marrja e Transkriptit (Falas)
-        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
-        try: transcript = transcript_list.find_transcript(['sq', 'en'])
-        except: 
-            transcript = transcript_list.find_manually_created_transcript()
-            if not transcript: transcript = next(iter(transcript_list))
+        # HAPI 1: Marrja e Transkriptit nga RapidAPI
+        full_text = get_transcript_from_rapidapi(video_id)
         
-        full_text = " ".join([t['text'] for t in transcript.fetch()])
-        
-        # Kufizojmë tekstin nëse është gjigant (për të kursyer para me AI)
-        # 15.000 karaktere janë rreth 20-30 minuta video
+        # Kufizojmë tekstin për AI
         text_to_process = full_text[:15000] 
 
-        # HAPI 2: Dërgimi te AI për Përkthim dhe Strukturim
-        print("Duke derguar te OpenAI...")
-        
+        # HAPI 2: AI Processing
         prompt = f"""
         Ti je një asistent inteligjent. Detyra jote është:
-        1. Lexo tekstin e mëposhtëm (që është transkript i një videoje).
-        2. Përktheje dhe përmblidhe në gjuhën SHQIPE.
-        3. Strukturoje në format JSON me fusha 'title' (titulli) dhe 'sections' (lista e kapitujve me 'headline' dhe 'content').
-        4. Teksti duhet të jetë i rrjedhshëm, profesional dhe i ndarë me tituj (headlines) të qartë.
+        1. Përktheje dhe përmblidhe tekstin në gjuhën SHQIPE.
+        2. Strukturoje në format JSON me fusha 'title' dhe 'sections' (headline, content).
 
         Teksti origjinal:
         {text_to_process}
 
-        Përgjigju VETËM me JSON valid në këtë format:
+        Përgjigju VETËM me JSON valid:
         {{
-            "title": "Titulli i Videos në Shqip",
+            "title": "Titulli...",
             "sections": [
-                {{ "headline": "Hyrje", "content": "Përmbajtja..." }},
-                {{ "headline": "Pika Kryesore", "content": "Përmbajtja..." }}
+                {{ "headline": "...", "content": "..." }}
             ]
         }}
         """
 
         completion = client.chat.completions.create(
-            model="gpt-4o-mini", # Modeli më i shpejtë dhe ekonomik
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant that outputs only JSON."},
                 {"role": "user", "content": prompt}
@@ -84,7 +109,6 @@ def get_transcript():
             response_format={ "type": "json_object" }
         )
 
-        # Marrim përgjigjen nga AI
         ai_response = completion.choices[0].message.content
         structured_data = json.loads(ai_response)
 
