@@ -11,7 +11,7 @@ const App = () => {
 
   const processVideo = async () => {
     if (!url.includes('youtube.com') && !url.includes('youtu.be')) {
-      setErrorMsg('Invalid YouTube URL'); setStatus('error'); return;
+      setErrorMsg('Linku i YouTube nuk është i saktë. Provo përsëri.'); setStatus('error'); return;
     }
     
     setStatus('fetching'); 
@@ -31,7 +31,7 @@ const App = () => {
       const data = await response.json();
 
       if (!data.success) {
-        throw new Error(data.error || 'Processing failed.');
+        throw new Error(data.error || 'Procesimi dështoi.');
       }
 
       setResult(data.data);
@@ -40,47 +40,39 @@ const App = () => {
     } catch (err) { 
       console.error(err); 
       setStatus('error'); 
-      setErrorMsg('Ensure the video has subtitles or API limits are met.'); 
+      setErrorMsg('Ndodhi një gabim. Sigurohu që video ka titra.'); 
     }
   };
 
   const handleDownload = async () => {
-    // 1. Gjejmë elementin origjinal
     const element = document.getElementById('report-content');
-    
-    // 2. Krijojmë një KLON (kopje) të pastër për PDF-në
-    // Kjo zgjidh problemin që herën e dytë del bosh
     const clone = element.cloneNode(true);
     
-    // 3. I heqim stilet "e rënda" (hije, rrumbullakosje) që PDF të dali kristal
     clone.style.boxShadow = 'none';
     clone.style.borderRadius = '0';
     clone.style.padding = '20px';
     clone.style.background = 'white';
-    clone.style.maxWidth = '800px'; // Forcojmë gjerësinë A4
+    clone.style.maxWidth = '800px'; 
     clone.style.margin = '0 auto';
 
-    // 4. E fusim klonin në një kuti të padukshme
     const container = document.createElement('div');
     container.style.position = 'absolute';
-    container.style.left = '-9999px'; // E fshehim jashtë ekranit
+    container.style.left = '-9999px'; 
     container.style.top = '0';
     container.appendChild(clone);
     document.body.appendChild(container);
 
-    // 5. Konfigurimi për të mos prerë fjalët
     const opt = {
-      margin: [10, 10, 15, 10], // Margina (Lart, Majtas, Poshtë, Djathtas)
-      filename: result ? `${result.title}.pdf` : 'document.pdf',
+      margin: [10, 10, 15, 10], 
+      filename: result ? `${result.title}.pdf` : 'dokumenti.pdf',
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
-        scale: 2, // Cilësi e lartë (Retina)
+        scale: 2, 
         useCORS: true, 
         letterRendering: true,
         scrollY: 0
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      // Kjo është MAGJIA që nuk lejon prerjen e tekstit në mes
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
 
@@ -89,7 +81,6 @@ const App = () => {
     } catch (e) {
       console.error("PDF Error:", e);
     } finally {
-      // 6. E fshijmë klonin pasi mbaron puna
       document.body.removeChild(container);
     }
   };
@@ -105,9 +96,9 @@ const App = () => {
           <div className="bg-black text-white p-1.5 rounded-lg">
             <Youtube size={20} strokeWidth={2.5} />
           </div>
-          <span className="font-semibold text-lg tracking-tight">VideoSummarizer</span>
+          <span className="font-semibold text-lg tracking-tight">VideoAI</span>
         </div>
-        <div className="text-xs font-medium text-gray-500 uppercase tracking-widest">For Dad</div>
+        <div className="text-xs font-medium text-gray-500 uppercase tracking-widest">Për Babin</div>
       </nav>
 
       <main className="pt-32 pb-20 px-4 max-w-4xl mx-auto flex flex-col items-center">
@@ -116,11 +107,11 @@ const App = () => {
         <div className={`w-full transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${status === 'complete' ? 'opacity-0 h-0 overflow-hidden translate-y-[-20px]' : 'opacity-100 translate-y-0'}`}>
           <div className="text-center mb-12 space-y-4">
             <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-[#1D1D1F]">
-              Turn videos into <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">beautiful documents.</span>
+              Kthe videot në <br/>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">dokumente të bukura.</span>
             </h1>
             <p className="text-xl text-[#86868B] max-w-lg mx-auto leading-relaxed">
-              Paste a YouTube link below and let AI create a detailed Albanian summary for you.
+              Vendos linkun e YouTube më poshtë dhe lëre inteligjencën artificiale të krijojë një përmbledhje të detajuar.
             </p>
           </div>
 
@@ -132,7 +123,7 @@ const App = () => {
               type="text" 
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="Paste YouTube Link..."
+              placeholder="Ngjit linkun e YouTube këtu..."
               className="flex-1 py-5 text-lg bg-transparent border-none outline-none placeholder:text-gray-300 text-[#1D1D1F]"
             />
             <button 
@@ -151,7 +142,7 @@ const App = () => {
               <div className="h-1 w-32 bg-gray-200 rounded-full overflow-hidden">
                 <div className="h-full bg-[#0071E3] w-1/2 animate-[shimmer_1s_infinite]"></div>
               </div>
-              <p className="text-sm font-medium">Analyzing video content...</p>
+              <p className="text-sm font-medium">Duke analizuar videon...</p>
             </div>
           )}
 
@@ -171,17 +162,17 @@ const App = () => {
                 <div className="bg-green-100 text-green-600 p-2 rounded-full">
                   <CheckCircle2 size={20} />
                 </div>
-                <span className="font-semibold text-sm text-[#1D1D1F]">Ready to export</span>
+                <span className="font-semibold text-sm text-[#1D1D1F]">Gati për eksport</span>
               </div>
               <div className="flex gap-2">
-                <button onClick={reset} className="p-2.5 rounded-full text-[#1D1D1F] hover:bg-gray-100 transition-colors" title="Start Over">
+                <button onClick={reset} className="p-2.5 rounded-full text-[#1D1D1F] hover:bg-gray-100 transition-colors" title="Fillo nga e para">
                   <RefreshCw size={20} />
                 </button>
                 <button 
                   onClick={handleDownload}
                   className="bg-[#1D1D1F] text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-black transition-all shadow-md flex items-center gap-2"
                 >
-                  <Download size={16} /> Save as PDF
+                  <Download size={16} /> Ruaj si PDF
                 </button>
               </div>
             </div>
@@ -191,7 +182,7 @@ const App = () => {
               
               <div className="border-b border-gray-100 pb-10 mb-10 break-inside-avoid">
                 <span className="inline-block px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-[10px] font-bold tracking-wider uppercase mb-4">
-                  AI Generated Report
+                  Raport i Gjeneruar nga AI
                 </span>
                 <h1 className="text-3xl md:text-4xl font-bold leading-tight mb-4 tracking-tight">
                   {result.title}
@@ -199,13 +190,12 @@ const App = () => {
                 <div className="flex items-center gap-2 text-sm text-[#86868B]">
                   <span>{new Date().toLocaleDateString('sq-AL', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                   <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                  <span>Video Summary</span>
+                  <span>Përmbledhje Video</span>
                 </div>
               </div>
 
               <div className="space-y-12">
                 {result.sections && result.sections.map((s, i) => (
-                  /* 'break-inside-avoid' është sekreti për të mos prerë tekstin */
                   <div key={i} className="group break-inside-avoid page-break-auto">
                     <h3 className="text-xl font-semibold mb-4 flex items-center gap-3 text-[#1D1D1F]">
                       <span className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-gray-400 text-xs font-bold group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
@@ -221,8 +211,8 @@ const App = () => {
               </div>
 
               <div className="mt-20 pt-10 border-t border-gray-100 flex justify-between items-center text-xs text-[#86868B] font-medium tracking-wide break-inside-avoid">
-                <span>Created with ❤️ for Dad</span>
-                <span className="opacity-50">VideoSummarizer AI</span>
+                <span>Krijuar me ❤️ për Babin</span>
+                <span className="opacity-50">VideoAI</span>
               </div>
             </div>
             
