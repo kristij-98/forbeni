@@ -106,34 +106,46 @@ const App = () => {
         {/* Input Section */}
         <div className={`w-full transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${status === 'complete' ? 'opacity-0 h-0 overflow-hidden translate-y-[-20px]' : 'opacity-100 translate-y-0'}`}>
           <div className="text-center mb-12 space-y-4">
-            <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-[#1D1D1F]">
+            <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-[#1D1D1F]">
               Kthe videot në <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">dokumente të bukura.</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">dokumente.</span>
             </h1>
-            <p className="text-xl text-[#86868B] max-w-lg mx-auto leading-relaxed">
-              Vendos linkun e YouTube më poshtë dhe lëre inteligjencën artificiale të krijojë një përmbledhje të detajuar.
+            <p className="text-lg md:text-xl text-[#86868B] max-w-lg mx-auto leading-relaxed">
+              Vendos linkun e YouTube dhe lëre AI të krijojë përmbledhjen.
             </p>
           </div>
 
-          <div className="bg-white rounded-3xl p-2 shadow-[0_20px_40px_-12px_rgba(0,0,0,0.08)] border border-white/50 max-w-2xl mx-auto flex items-center transition-all focus-within:ring-4 focus-within:ring-blue-100 focus-within:border-blue-500/50">
-            <div className="pl-6 pr-4 text-gray-400">
-              <Youtube size={24} />
+          <div className="bg-white rounded-3xl p-2 shadow-[0_20px_40px_-12px_rgba(0,0,0,0.08)] border border-white/50 max-w-2xl mx-auto flex flex-col md:flex-row items-center transition-all focus-within:ring-4 focus-within:ring-blue-100 focus-within:border-blue-500/50 gap-2">
+            
+            <div className="flex items-center w-full">
+              <div className="pl-4 md:pl-6 pr-2 text-gray-400">
+                <Youtube size={24} />
+              </div>
+              <input 
+                type="text" 
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="Ngjit linkun e YouTube..."
+                className="flex-1 py-4 md:py-5 text-base md:text-lg bg-transparent border-none outline-none placeholder:text-gray-300 text-[#1D1D1F] w-full"
+              />
             </div>
-            <input 
-              type="text" 
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="Ngjit linkun e YouTube këtu..."
-              className="flex-1 py-5 text-lg bg-transparent border-none outline-none placeholder:text-gray-300 text-[#1D1D1F]"
-            />
+            
+            {/* Butoni i Përmirësuar: 100% gjerësi në celular, auto në PC */}
             <button 
               onClick={processVideo}
               disabled={status === 'fetching' || !url}
-              className={`m-2 px-8 py-4 rounded-2xl font-semibold text-white transition-all duration-300 shadow-lg flex items-center gap-2
+              className={`w-full md:w-auto m-0 md:m-2 px-8 py-4 rounded-2xl font-semibold text-white transition-all duration-300 shadow-lg flex items-center justify-center gap-2
                 ${status === 'fetching' ? 'bg-[#86868B] cursor-wait' : 'bg-[#0071E3] hover:bg-[#0077ED] hover:scale-[1.02] active:scale-[0.98]'}
               `}
             >
-              {status === 'fetching' ? <Loader2 className="animate-spin" /> : <ArrowRight strokeWidth={2.5} />}
+              {status === 'fetching' ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <>
+                  <span>Vazhdo</span>
+                  <ArrowRight strokeWidth={2.5} />
+                </>
+              )}
             </button>
           </div>
 
@@ -157,20 +169,20 @@ const App = () => {
         {status === 'complete' && result && (
           <div className="w-full animate-in fade-in slide-in-from-bottom-10 duration-700 ease-out fill-mode-forwards">
             
-            <div className="sticky top-24 z-40 flex justify-between items-center bg-white/80 backdrop-blur-xl p-4 rounded-2xl shadow-sm border border-white/20 mb-8 max-w-3xl mx-auto">
+            <div className="sticky top-24 z-40 flex flex-col md:flex-row justify-between items-center bg-white/80 backdrop-blur-xl p-4 rounded-2xl shadow-sm border border-white/20 mb-8 max-w-3xl mx-auto gap-4">
               <div className="flex items-center gap-3">
                 <div className="bg-green-100 text-green-600 p-2 rounded-full">
                   <CheckCircle2 size={20} />
                 </div>
                 <span className="font-semibold text-sm text-[#1D1D1F]">Gati për eksport</span>
               </div>
-              <div className="flex gap-2">
-                <button onClick={reset} className="p-2.5 rounded-full text-[#1D1D1F] hover:bg-gray-100 transition-colors" title="Fillo nga e para">
+              <div className="flex gap-2 w-full md:w-auto">
+                <button onClick={reset} className="p-2.5 rounded-full text-[#1D1D1F] hover:bg-gray-100 transition-colors md:flex-none flex-1 flex justify-center" title="Fillo nga e para">
                   <RefreshCw size={20} />
                 </button>
                 <button 
                   onClick={handleDownload}
-                  className="bg-[#1D1D1F] text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-black transition-all shadow-md flex items-center gap-2"
+                  className="bg-[#1D1D1F] text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-black transition-all shadow-md flex items-center justify-center gap-2 md:flex-none flex-[3]"
                 >
                   <Download size={16} /> Ruaj si PDF
                 </button>
@@ -178,13 +190,13 @@ const App = () => {
             </div>
 
             {/* Document Content */}
-            <div id="report-content" className="bg-white rounded-[40px] shadow-[0_40px_80px_-24px_rgba(0,0,0,0.08)] p-12 md:p-16 max-w-3xl mx-auto text-[#1D1D1F]">
+            <div id="report-content" className="bg-white rounded-[30px] md:rounded-[40px] shadow-[0_40px_80px_-24px_rgba(0,0,0,0.08)] p-8 md:p-16 max-w-3xl mx-auto text-[#1D1D1F]">
               
               <div className="border-b border-gray-100 pb-10 mb-10 break-inside-avoid">
                 <span className="inline-block px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-[10px] font-bold tracking-wider uppercase mb-4">
                   Raport i Gjeneruar nga AI
                 </span>
-                <h1 className="text-3xl md:text-4xl font-bold leading-tight mb-4 tracking-tight">
+                <h1 className="text-2xl md:text-4xl font-bold leading-tight mb-4 tracking-tight">
                   {result.title}
                 </h1>
                 <div className="flex items-center gap-2 text-sm text-[#86868B]">
