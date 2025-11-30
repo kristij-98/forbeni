@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Youtube, ArrowRight, Loader2, CheckCircle2, Download, RefreshCw, Quote, ArrowLeft, Sparkles, BookOpen } from 'lucide-react';
+import { Youtube, ArrowRight, Loader2, CheckCircle2, Download, RefreshCw, Quote, ArrowLeft, Sparkles, BookOpen, CalendarCheck } from 'lucide-react';
 
 const API_URL = 'http://localhost:5000';
 
@@ -27,20 +27,43 @@ const MenuCard = ({ title, desc, icon: Icon, onClick, color }) => (
   </button>
 );
 
-// --- KOMPONENTI: GJETESI I SHPREHJES ---
+// --- KOMPONENTI: GJETESI I SHPREHJES (ME KUJTESË) ---
 const QuoteGenerator = ({ onBack }) => {
   const [quote, setQuote] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const getQuote = async () => {
-    setLoading(true);
+  // Funksioni që kontrollon nëse kemi marrë shprehje sot
+  const checkAndGetQuote = async () => {
+    const today = new Date().toLocaleDateString('sq-AL'); // Data e sotme (psh. "30/11/2025")
+    const savedData = localStorage.getItem('dailyQuote');
+
+    // 1. Kontrollojmë nëse kemi diçka të ruajtur
+    if (savedData) {
+      const parsed = JSON.parse(savedData);
+      // 2. Nëse data e ruajtur është e njëjtë me sot, trego atë të vjetrën
+      if (parsed.date === today) {
+        setQuote(parsed.data);
+        setLoading(false);
+        return; // NDAL! Mos kërko te serveri.
+      }
+    }
+
+    // 3. Nëse është ditë e re, kërko nga Serveri
     try {
       let backendUrl = API_URL;
       if (import.meta.env.VITE_API_URL) backendUrl = import.meta.env.VITE_API_URL;
       
       const res = await fetch(`${backendUrl}/api/daily-quote`);
       const data = await res.json();
-      if (data.success) setQuote(data.data);
+      
+      if (data.success) {
+        setQuote(data.data);
+        // 4. Ruaje në telefon me datën e sotme
+        localStorage.setItem('dailyQuote', JSON.stringify({ 
+          date: today, 
+          data: data.data 
+        }));
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -48,8 +71,7 @@ const QuoteGenerator = ({ onBack }) => {
     }
   };
 
-  // Merr shprehjen sa hapet faqja
-  useEffect(() => { getQuote(); }, []);
+  useEffect(() => { checkAndGetQuote(); }, []);
 
   return (
     <div className="w-full max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700">
@@ -63,7 +85,7 @@ const QuoteGenerator = ({ onBack }) => {
         {loading ? (
           <div className="py-20 flex flex-col items-center gap-4">
             <Loader2 className="animate-spin text-purple-600" size={40} />
-            <p className="text-gray-400 animate-pulse">Duke kërkuar mençuri...</p>
+            <p className="text-gray-400 animate-pulse">Duke zgjedhur shprehjen e ditës...</p>
           </div>
         ) : quote ? (
           <>
@@ -72,30 +94,35 @@ const QuoteGenerator = ({ onBack }) => {
                 <Quote size={32} />
               </div>
             </div>
-            <h2 className="text-2xl md:text-4xl font-bold text-[#1D1D1F] mb-6 leading-tight font-serif italic">
+            
+            <h2 className="text-2xl md:text-3xl font-bold text-[#1D1D1F] mb-6 leading-tight font-serif italic">
               "{quote.quote}"
             </h2>
+            
             <div className="w-16 h-1 bg-purple-100 mx-auto mb-6 rounded-full"></div>
+            
             <h3 className="text-lg font-bold text-gray-900 uppercase tracking-widest mb-2">{quote.author}</h3>
+            
             <p className="text-gray-500 text-sm font-medium bg-gray-50 inline-block px-4 py-2 rounded-xl">
               💡 {quote.context}
             </p>
-            <div className="mt-10">
-              <button onClick={getQuote} className="bg-black text-white px-8 py-3 rounded-full font-semibold hover:bg-gray-800 transition-all flex items-center gap-2 mx-auto">
-                <Sparkles size={18} />
-                Shprehje tjetër
-              </button>
+
+            {/* Mesazhi që tregon se mbaroi për sot */}
+            <div className="mt-12 pt-8 border-t border-gray-100 flex flex-col items-center gap-2 text-purple-800 bg-purple-50/50 rounded-2xl py-6">
+              <CalendarCheck size={24} />
+              <p className="font-semibold">Kjo ishte shprehja për sot.</p>
+              <p className="text-sm opacity-70">Eja përsëri nesër për një dozë të re motivimi!</p>
             </div>
           </>
         ) : (
-          <div className="py-10 text-red-500">Pati një problem. Provo përsëri.</div>
+          <div className="py-10 text-red-500">Pati një problem. Provo përsëri më vonë.</div>
         )}
       </div>
     </div>
   );
 };
 
-// --- KOMPONENTI: PERKTHYESI I VIDEOS (I VJETRI) ---
+// --- KOMPONENTI: PERKTHYESI I VIDEOS ---
 const VideoTranslator = ({ onBack }) => {
   const [url, setUrl] = useState('');
   const [status, setStatus] = useState('idle'); 
@@ -126,17 +153,21 @@ const VideoTranslator = ({ onBack }) => {
   const handleDownload = async () => {
     const element = document.getElementById('report-content');
     const clone = element.cloneNode(true);
-    clone.style.boxShadow = 'none'; clone.style.padding = '20px'; clone.style.maxWidth = '800px'; clone.style.margin = '0 auto';
+    clone.style.boxShadow = 'none'; clone.style.borderRadius = '0'; clone.style.padding = '20px'; clone.style.background = 'white'; clone.style.maxWidth = '800px'; clone.style.margin = '0 auto';
+    const container = document.createElement('div'); container.style.position = 'absolute'; container.style.left = '-9999px'; container.style.top = '0'; container.appendChild(clone); document.body.appendChild(container);
     
     const opt = {
       margin: [10, 10, 15, 10], 
       filename: result ? `${result.title}.pdf` : 'dokumenti.pdf',
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+      html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollY: 0 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
-    await window.html2pdf().set(opt).from(clone).save();
+
+    try { await window.html2pdf().set(opt).from(clone).save(); } 
+    catch (e) { console.error("PDF Error:", e); } 
+    finally { document.body.removeChild(container); }
   };
 
   const reset = () => { setStatus('idle'); setResult(null); setUrl(''); };
@@ -178,7 +209,7 @@ const VideoTranslator = ({ onBack }) => {
           </div>
           <div id="report-content" className="bg-white rounded-[40px] shadow-sm p-12 md:p-16 text-[#1D1D1F]">
             <h1 className="text-3xl font-bold mb-4">{result.title}</h1>
-            <div className="space-y-8">{result.sections.map((s, i) => (<div key={i}><h3 className="text-xl font-bold mb-2">{s.headline}</h3><div className="text-lg text-gray-600 leading-relaxed text-justify">{s.content}</div></div>))}</div>
+            <div className="space-y-8">{result.sections.map((s, i) => (<div key={i} className="break-inside-avoid page-break-auto"><h3 className="text-xl font-bold mb-2">{s.headline}</h3><div className="text-lg text-gray-600 leading-relaxed text-justify">{s.content}</div></div>))}</div>
           </div>
         </div>
       )}
@@ -186,20 +217,17 @@ const VideoTranslator = ({ onBack }) => {
   );
 };
 
-// --- APLIKACIONI KRYESOR ---
 const App = () => {
-  // 'home', 'video', 'quote'
   const [view, setView] = useState('home');
 
   return (
     <div className="min-h-screen bg-[#F5F5F7] text-[#1D1D1F] font-[-apple-system,BlinkMacSystemFont,sans-serif]">
-      {/* Navbar */}
       <nav className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-md border-b border-white/20 px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center font-bold text-xl">A</div>
           <span className="font-semibold text-lg tracking-tight">Përshëndetje Arben</span>
         </div>
-        <div className="text-xs font-medium text-gray-400 uppercase tracking-widest">Versioni 2.0</div>
+        <div className="text-xs font-medium text-gray-400 uppercase tracking-widest">Versioni 2.1</div>
       </nav>
 
       <main className="pt-32 pb-20 px-6 max-w-6xl mx-auto">
@@ -207,31 +235,16 @@ const App = () => {
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <h1 className="text-4xl md:text-5xl font-bold mb-2 text-[#1D1D1F]">Çfarë do të bësh sot?</h1>
             <p className="text-xl text-gray-500 mb-12">Zgjidh një nga opsionet më poshtë.</p>
-            
             <div className="grid md:grid-cols-2 gap-6">
-              <MenuCard 
-                title="Përkthe Video" 
-                desc="Kthe videot e YouTube në dokumente të lexueshme në shqip."
-                icon={Youtube}
-                color="blue"
-                onClick={() => setView('video')}
-              />
-              <MenuCard 
-                title="Shprehja e Ditës" 
-                desc="Merr motivim ditor nga filozofët më të mëdhenj të historisë."
-                icon={BookOpen}
-                color="purple"
-                onClick={() => setView('quote')}
-              />
+              <MenuCard title="Përkthe Video" desc="Kthe videot e YouTube në dokumente të lexueshme në shqip." icon={Youtube} color="blue" onClick={() => setView('video')} />
+              <MenuCard title="Shprehja e Ditës" desc="Merr motivim ditor nga filozofët më të mëdhenj të historisë." icon={BookOpen} color="purple" onClick={() => setView('quote')} />
             </div>
           </div>
         )}
-
         {view === 'video' && <VideoTranslator onBack={() => setView('home')} />}
         {view === 'quote' && <QuoteGenerator onBack={() => setView('home')} />}
       </main>
     </div>
   );
 };
-
 export default App;
